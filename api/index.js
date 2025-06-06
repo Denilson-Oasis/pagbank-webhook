@@ -6,6 +6,7 @@ export default async function handler(req, res) {
   const data = req.body;
 
   // Exibe os dados de forma clara no log da Vercel
+  console.log("📦 Dados brutos recebidos:", JSON.stringify(data, null, 2));
   console.log("📨 Nova reserva recebida via Webhook:");
   console.log(`➡️ Nome: ${data.nome || 'Não informado'}`);
   console.log(`📱 Celular com DDD: ${data.celular || 'Não informado'}`);
