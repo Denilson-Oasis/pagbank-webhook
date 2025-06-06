@@ -1,12 +1,27 @@
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método não permitido' });
   }
 
-  const data = req.body;
+  const buffers = [];
 
-  // Exibe os dados de forma clara no log da Vercel
-  console.log("📦 Dados brutos recebidos:", JSON.stringify(data, null, 2));
+  for await (const chunk of req) {
+    buffers.push(chunk);
+  }
+
+  const rawData = Buffer.concat(buffers).toString();
+  const params = new URLSearchParams(rawData);
+  const data = Object.fromEntries(params.entries());
+
+  // Exibe os dados brutos no log da Vercel
+  console.log("📦 Dados brutos recebidos:", data);
+
   console.log("📨 Nova reserva recebida via Webhook:");
   console.log(`➡️ Nome: ${data.nome || 'Não informado'}`);
   console.log(`📱 Celular com DDD: ${data.celular || 'Não informado'}`);
