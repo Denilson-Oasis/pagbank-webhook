@@ -68,7 +68,7 @@ export default async function handler(req, res) {
     });
 
     const options = {
-      hostname: 'sandbox.api.pagseguro.com',
+      hostname: 'api.pagseguro.com',
       path: '/orders',
       method: 'POST',
       headers: {
