@@ -1,5 +1,7 @@
 import formidable from 'formidable';
 
+const PAGBANK_TOKEN = process.env.PAGBANK_TOKEN; // 🔑 Pegando o token do ambiente
+
 export const config = {
   api: {
     bodyParser: false,
@@ -40,7 +42,8 @@ export default async function handler(req, res) {
       valorTotal
     });
 
-    // Apenas retorno de teste, depois podemos substituir por chamada ao PagBank
+    // Aqui futuramente vamos usar o PAGBANK_TOKEN para fazer a cobrança
+
     return res.status(200).json({
       mensagem: "Dados recebidos e extraídos com sucesso!",
       nome,
