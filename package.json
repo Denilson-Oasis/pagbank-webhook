@@ -2,6 +2,7 @@
   "name": "pagbank-webhook",
   "version": "1.0.0",
   "dependencies": {
-    "formidable": "^2.0.1"
+    "raw-body": "^2.5.2",
+    "formidable": "^3.5.0"
   }
 }
