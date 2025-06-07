@@ -1,6 +1,7 @@
 // /api/gerar-pagamento.js
 
 export default async function handler(req, res) {
+  console.log('Dados recebidos do Jotform:', req.body);
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método não permitido' });
   }
