@@ -3,13 +3,13 @@ export default async function handler(req, res) {
     // 🔎 Extrai os dados do Jotform
     const rawRequest = JSON.parse(req.body?.rawRequest?.[0] || '{}');
 
-    const nome = `${rawRequest.q47_name?.first || ''} ${rawRequest.q47_name?.last || ''}`.trim();
-    const email = rawRequest.q48_email || '';
-    const celularRaw = rawRequest.q49_phoneNumber?.full || '';
+    const nome = `${rawRequest.#first_47 || ''} ${rawRequest.#last_47 || ''}`.trim();
+    const email = rawRequest.#input_48 || '';
+    const celularRaw = rawRequest.#input_49_full || '';
     const celular = celularRaw.replace(/\D/g, '').replace(/^55/, '');
 
-    const tipoVisita = rawRequest.q53_typeA || 'Visita';
-    const valorTotalStr = rawRequest.q62_valorTotal?.replace(/[^\d]/g, '') || '0';
+    const tipoVisita = rawRequest.#input_53 || 'Visita';
+    const valorTotalStr = rawRequest.#input_62(/[^\d]/g, '') || '0';
     const valorCentavos = parseInt(valorTotalStr, 10);
 
     console.log("🟢 Dados extraídos do Jotform:", {
