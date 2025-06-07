@@ -1,0 +1,8 @@
+{
+  "name": "pagbank-webhook",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "raw-body": "^2.5.2"
+  }
+}
