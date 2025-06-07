@@ -51,8 +51,8 @@ export default async function handler(req, res) {
     });
 
     const options = {
-      hostname: 'pix.pagseguro.uol.com.br',
-      path: '/v2/orders',
+      hostname: 'api.pagbank.com.br',
+      path: '/orders',
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.PAGBANK_TOKEN}`,
