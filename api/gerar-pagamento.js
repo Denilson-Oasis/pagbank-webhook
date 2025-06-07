@@ -62,23 +62,17 @@ export default async function handler(req, res) {
     };
 
     // 🔄 Envia para o PagBank
-    const respostaPagBank = await new Promise((resolve, reject) => {
-      const request = https.request(options, (response) => {
-        let data = '';
-        response.on('data', (chunk) => (data += chunk));
-        response.on('end', () => {
-          try {
-            resolve(JSON.parse(data));
-          } catch (err) {
-            reject(new Error(`Erro ao parsear resposta: ${data}`));
-          }
-        });
-      });
+const response = await fetch('https://api.pagbank.com.br/orders', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${process.env.PAGBANK_TOKEN}`,
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  },
+  body: pagRequestData
+});
 
-      request.on('error', reject);
-      request.write(pagRequestData);
-      request.end();
-    });
+const respostaPagBank = await response.json();
 
     console.log("🔵 Resposta do PagBank:", respostaPagBank);
 
