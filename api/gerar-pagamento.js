@@ -1,4 +1,4 @@
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   try {
     // 🔎 Extrai os dados do Jotform
     const rawRequest = JSON.parse(req.body?.rawRequest?.[0] || '{}');
