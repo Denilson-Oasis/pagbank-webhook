@@ -4,8 +4,15 @@ module.exports = async (req, res) => {
   try {
     const rawRequest = req.body;
 
+    console.log("🔍 Corpo da requisição recebido:", rawRequest);
+
+    if (!rawRequest || !rawRequest.nome) {
+      console.error("❌ Corpo da requisição inválido ou campo 'nome' ausente");
+      return res.status(400).json({ erro: "Requisição inválida: campo 'nome' ausente." });
+    }
+
     // 🔹 Campos do formulário Jotform
-    const nome = `${rawRequest.nome?.first || ''} ${rawRequest.nome?.last || ''}`.trim();
+    const nome = `${rawRequest.nome.first || ''} ${rawRequest.nome.last || ''}`.trim();
     const email = rawRequest.email || '';
     const celular = rawRequest.celular || '';
     const tipoVisita = rawRequest.typeA || '';
