@@ -3,7 +3,7 @@ module.exports = async function handler(req, res) {
     // 🔎 Extrai os dados do Jotform
     const rawRequest = JSON.parse(req.body?.rawRequest?.[0] || '{}');
 
-    const nome = `${rawRequest['first_47'] || ''} ${rawRequest['last_47'] || ''}`.trim();
+    const nome = `${rawRequest.name?.first || ''} ${rawRequest.name?.last || ''}`.trim();
     const email = rawRequest['q48_email'] || '';
     const celularRaw = rawRequest['q49_phoneNumber']?.full || '';
     const celular = celularRaw.replace(/\D/g, '').replace(/^55/, '');
