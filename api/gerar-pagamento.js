@@ -5,7 +5,7 @@ module.exports = async (req, res) => {
     const rawRequest = req.body;
 
     // 🔹 Campos do formulário Jotform
-    const nome = `${rawRequest.nome.first || ''} ${rawRequest.nome.last || ''}`.trim();
+    const nome = `${rawRequest.nome?.first || ''} ${rawRequest.nome?.last || ''}`.trim();
     const email = rawRequest.email || '';
     const celular = rawRequest.celular || '';
     const tipoVisita = rawRequest.typeA || '';
@@ -19,7 +19,7 @@ module.exports = async (req, res) => {
       valorTotalStr
     });
 
-    // 🔹 Convertendo valor
+    // 🔹 Convertendo valor para centavos
     const valorCentavos = Math.round(parseFloat(valorTotalStr.replace(',', '.')) * 100);
 
     // 🔹 Requisição ao PagBank
@@ -62,32 +62,24 @@ module.exports = async (req, res) => {
     }
 
     console.log('✅ Pagamento criado com sucesso');
+
+    // 🔹 Montar dados para o Google Sheets
     const dadosConfirmados = {
       nome,
       email,
       telefone: celular,
-      tipoDeVisita,
-      numeroDias,
-      numeroPessoas,
-      valorTotal,
-      diaChegada
+      tipoDeVisita: tipoVisita,
+      numeroDias: rawRequest.numeroDias || '',
+      numeroPessoas: rawRequest.numeroPessoas || '',
+      valorTotal: valorTotalStr,
+      diaChegada: rawRequest.diaChegada || ''
     };
-
 
     // 🔹 Enviar para o Google Sheets
     await fetch('https://script.google.com/macros/s/AKfycbwPky0n-XYy4N5Tb8-JtJlQoywac7Y32chhAJ9zfRv_wdzGaVq3TEwqhOF7WJGnyzAydw/exec', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(dadosConfirmados)
-        nome,
-        email,
-        telefone: celular,
-        tipoDeVisita: tipoVisita,
-        numeroDias: rawRequest.numeroDias || '',
-        numeroPessoas: rawRequest.numeroPessoas || '',
-        valorTotal: valorTotalStr,
-        diaChegada: rawRequest.diaChegada || ''
-      })
     });
 
     return res.status(200).json({
@@ -101,4 +93,3 @@ module.exports = async (req, res) => {
     return res.status(500).json({ erro: 'Erro interno no servidor' });
   }
 };
-
