@@ -62,12 +62,23 @@ module.exports = async (req, res) => {
     }
 
     console.log('✅ Pagamento criado com sucesso');
+    const dadosConfirmados = {
+      nome,
+      email,
+      telefone: celular,
+      tipoDeVisita,
+      numeroDias,
+      numeroPessoas,
+      valorTotal,
+      diaChegada
+    };
+
 
     // 🔹 Enviar para o Google Sheets
     await fetch('https://script.google.com/macros/s/AKfycbwPky0n-XYy4N5Tb8-JtJlQoywac7Y32chhAJ9zfRv_wdzGaVq3TEwqhOF7WJGnyzAydw/exec', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+      body: JSON.stringify(dadosConfirmados)
         nome,
         email,
         telefone: celular,
