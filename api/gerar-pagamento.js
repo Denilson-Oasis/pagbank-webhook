@@ -27,7 +27,8 @@ module.exports = async (req, res) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer SEU_TOKEN_DO_PAGBANK_AQUI'
+        'Authorization': '
+        05e08ae1-dc81-42f6-999f-bf1309c86f0a7faff224496396544e9fd225911b4b62e9d0-e1d1-4a25-ad34-4b18e4aecdf5'
       },
       body: JSON.stringify({
         reference_id: `reserva-${Date.now()}`,
