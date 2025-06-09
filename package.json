@@ -1,8 +1,11 @@
 {
   "name": "pagbank-webhook",
   "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
   "dependencies": {
     "raw-body": "^2.5.2",
-    "formidable": "^3.5.0"
+    "formidable": "^3.5.0",
+    "node-fetch": "^2.6.1"
   }
 }
