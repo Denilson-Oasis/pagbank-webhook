@@ -1,34 +1,23 @@
 const fetch = require('node-fetch');
-const getRawBody = require('raw-body');
+const formidable = require('formidable');
 
 module.exports = async (req, res) => {
-  try {
-    const raw = await getRawBody(req);
-    const rawRequest = JSON.parse(raw.toString('utf8'));
+  const form = new formidable.IncomingForm();
 
-    console.log("🔍 Corpo da requisição recebido:", rawRequest);
-
-    if (!rawRequest || !rawRequest.nome) {
-      console.error("❌ Corpo da requisição inválido ou campo 'nome' ausente");
-      return res.status(400).json({ erro: "Requisição inválida: campo 'nome' ausente." });
+  form.parse(req, async (err, fields) => {
+    if (err) {
+      console.error("❌ Erro ao fazer parse do corpo da requisição:", err);
+      return res.status(400).json({ erro: "Erro ao processar os dados enviados." });
     }
 
-    // 🔹 Campos do formulário Jotform
-    const nome = `${rawRequest.nome.first || ''} ${rawRequest.nome.last || ''}`.trim();
-    const email = rawRequest.email || '';
-    const celular = rawRequest.celular || '';
-    const tipoVisita = rawRequest.typeA || '';
-    const valorTotalStr = rawRequest.valorTotal || '0';
+    console.log("🔍 Dados recebidos do Jotform:", fields);
 
-    console.log("🟢 Dados extraídos do Jotform:", {
-      nome,
-      email,
-      celular,
-      tipoVisita,
-      valorTotalStr
-    });
+    const nome = `${fields.nome?.first || ''} ${fields.nome?.last || ''}`.trim();
+    const email = fields.email || '';
+    const celular = fields.celular || '';
+    const tipoVisita = fields.typeA || '';
+    const valorTotalStr = fields.valorTotal || '0';
 
-    // 🔹 Convertendo valor para centavos
     const valorCentavos = Math.round(parseFloat(valorTotalStr.replace(',', '.')) * 100);
 
     // 🔹 Requisição ao PagBank
