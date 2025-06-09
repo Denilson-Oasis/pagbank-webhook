@@ -1,77 +1,93 @@
-module.exports = async function handler(req, res) {
+const fetch = require('node-fetch');
+
+module.exports = async (req, res) => {
   try {
-    // 🔎 Extrai os dados do Jotform
-    const rawRequest = JSON.parse(req.body?.rawRequest?.[0] || '{}');
+    const rawRequest = req.body;
 
-    const nome = `${rawRequest.name?.first || ''} ${rawRequest.name?.last || ''}`.trim();
-    const email = rawRequest['q48_email'] || '';
-    const celularRaw = rawRequest['q49_phoneNumber']?.full || '';
-    const celular = celularRaw.replace(/\D/g, '').replace(/^55/, '');
-
-    const tipoVisita = rawRequest['q53_typeA'] || 'Visita';
-    const valorTotalStr = rawRequest['q62_valorTotal']?.replace(/[^\d]/g, '') || '0';
-    const valorCentavos = parseInt(valorTotalStr, 10);
+    // 🔹 Campos do formulário Jotform
+    const nome = `${rawRequest.nome.first || ''} ${rawRequest.nome.last || ''}`.trim();
+    const email = rawRequest.email || '';
+    const celular = rawRequest.celular || '';
+    const tipoVisita = rawRequest.typeA || '';
+    const valorTotalStr = rawRequest.valorTotal || '0';
 
     console.log("🟢 Dados extraídos do Jotform:", {
-      nome, email, celular, tipoVisita, valorTotalStr
+      nome,
+      email,
+      celular,
+      tipoVisita,
+      valorTotalStr
     });
 
-    // 🔐 Monta o payload para o PagBank
-    const pagRequestData = JSON.stringify({
-      reference_id: `reserva-${Date.now()}`,
-      customer: {
-        name: nome || "Cliente Oásis",
-        email: email || "cliente@exemplo.com",
-        phones: celular
-          ? [
-              {
-                country: "55",
-                area: celular.substring(0, 2),
-                number: celular.substring(2),
-                type: "MOBILE"
-              }
-            ]
-          : []
+    // 🔹 Convertendo valor
+    const valorCentavos = Math.round(parseFloat(valorTotalStr.replace(',', '.')) * 100);
+
+    // 🔹 Requisição ao PagBank
+    const response = await fetch('https://sandbox.api.pagseguro.com/orders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer SEU_TOKEN_DO_PAGBANK_AQUI'
       },
-      items: [
-        {
-          name: `Visita: ${tipoVisita}`,
+      body: JSON.stringify({
+        reference_id: `reserva-${Date.now()}`,
+        customer: {
+          name: nome,
+          email: email,
+          phones: [{
+            country: "55",
+            area: celular.substring(0, 2),
+            number: celular.substring(2),
+            type: "MOBILE"
+          }]
+        },
+        items: [{
+          name: tipoVisita,
           quantity: 1,
-          unit_amount: valorCentavos || 1000 // valor mínimo de segurança
-        }
-      ],
-      charges: [
-        {
+          unit_amount: valorCentavos
+        }],
+        charges: [{
           payment_method: {
             type: "PIX"
           }
-        }
-      ]
+        }]
+      })
     });
 
-    // 🌐 Faz a requisição à API PagBank
-    const response = await fetch('https://api.pagseguro.com/orders', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.PAGBANK_TOKEN}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: pagRequestData
-    });
+    const pagamento = await response.json();
 
-    const responseData = await response.json();
-
-    if (!response.ok) {
-      console.error("❌ Erro na resposta do PagBank:", responseData);
-      return res.status(500).json({ error: "Erro ao gerar pagamento", detalhes: responseData });
+    if (pagamento.error_messages) {
+      console.error("❌ Erro na resposta do PagBank:", pagamento);
+      return res.status(500).json({ erro: 'Erro ao criar pagamento' });
     }
 
-    console.log("✅ Pagamento gerado com sucesso:", responseData);
-    res.status(200).json({ status: "Pagamento gerado", data: responseData });
+    console.log('✅ Pagamento criado com sucesso');
 
-  } catch (error) {
-    console.error("❌ Erro ao processar o formulário ou gerar pagamento:", error);
-    res.status(500).json({ error: "Erro interno", detalhes: error.message });
+    // 🔹 Enviar para o Google Sheets
+    await fetch('https://script.google.com/macros/s/AKfycbwPky0n-XYy4N5Tb8-JtJlQoywac7Y32chhAJ9zfRv_wdzGaVq3TEwqhOF7WJGnyzAydw/exec', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nome,
+        email,
+        telefone: celular,
+        tipoDeVisita: tipoVisita,
+        numeroDias: rawRequest.numeroDias || '',
+        numeroPessoas: rawRequest.numeroPessoas || '',
+        valorTotal: valorTotalStr,
+        diaChegada: rawRequest.diaChegada || ''
+      })
+    });
+
+    return res.status(200).json({
+      status: 'sucesso',
+      mensagem: 'Pagamento criado e reserva registrada.',
+      pagamento
+    });
+
+  } catch (erro) {
+    console.error("❌ Erro no processamento:", erro);
+    return res.status(500).json({ erro: 'Erro interno no servidor' });
   }
-}
+};
+
