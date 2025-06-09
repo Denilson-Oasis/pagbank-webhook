@@ -1,8 +1,10 @@
 const fetch = require('node-fetch');
+const getRawBody = require('raw-body');
 
 module.exports = async (req, res) => {
   try {
-    const rawRequest = req.body;
+    const raw = await getRawBody(req);
+    const rawRequest = JSON.parse(raw.toString('utf8'));
 
     console.log("🔍 Corpo da requisição recebido:", rawRequest);
 
