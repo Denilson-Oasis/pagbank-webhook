@@ -23,7 +23,7 @@ module.exports = async (req, res) => {
     const valorCentavos = Math.round(parseFloat(valorTotalStr.replace(',', '.')) * 100);
 
     // 🔹 Requisição ao PagBank
-    const response = await fetch('https://sandbox.api.pagseguro.com/orders', {
+    const response = await fetch('https://api.pagseguro.com/orders', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
