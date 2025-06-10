@@ -1,9 +1,9 @@
 const fetch = require('node-fetch');
-const formidable = require('formidable');
+const { IncomingForm } = require('formidable');
 
 module.exports = async (req, res) => {
   try {
-    const form = formidable({});
+    const form = new IncomingForm();
     form.parse(req, async (err, fields) => {
       if (err) {
         console.error("❌ Erro ao fazer parse do formulário:", err);
