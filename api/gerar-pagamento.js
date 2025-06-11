@@ -18,9 +18,8 @@ module.exports = async (req, res) => {
       return res.status(405).json({ erro: 'Método não permitido' });
     }
 
+    // 🔍 Tenta capturar o corpo da requisição corretamente
     let rawRequest = req.body;
-
-    // Se vier como string, faz o parse
 
     if (typeof rawRequest === 'string') {
       try {
@@ -31,10 +30,8 @@ module.exports = async (req, res) => {
         return res.status(400).json({ erro: 'JSON inválido recebido' });
       }
     }
-    
-    // Log para debug
+
     console.log("📦 RAW BODY DEPOIS DO PARSE:", rawRequest);
-    ...
 
     // 🔁 Suporte a nome como string OU como objeto
     let nome = '';
@@ -46,7 +43,7 @@ module.exports = async (req, res) => {
 
     const email = rawRequest.email || '';
     const celular = rawRequest.celular || '';
-    const tipoVisita = rawRequest.typeA || '';
+    const tipoVisita = rawRequest.tipoDeVisita || rawRequest.typeA || ''; // aceita os dois
     const valorTotalStr = rawRequest.valorTotal || '0';
     const numeroDias = rawRequest.numeroDias || '';
     const numeroPessoas = rawRequest.numeroPessoas || '';
@@ -107,7 +104,6 @@ module.exports = async (req, res) => {
 
     console.log('✅ Pagamento criado com sucesso');
 
-    // ⚠️ ATENÇÃO: aqui estava o erro do Postman — faltava vírgula!
     const dadosConfirmados = {
       nome,
       email,
@@ -119,6 +115,7 @@ module.exports = async (req, res) => {
       diaChegada
     };
 
+    // Envia os dados para sua planilha do Google
     await fetch('https://script.google.com/macros/s/AKfycbwFOM7sieQa7ItP0z5vRch5-Cb4LW4ntm2FaI9tf4w2pguArtmcXGjikmeA7K_SFn-MpA/exec', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
