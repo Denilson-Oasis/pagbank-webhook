@@ -132,4 +132,4 @@ module.exports = async (req, res) => {
     console.error("❌ Erro no processamento:", erro);
     return res.status(500).json({ erro: 'Erro interno no servidor' });
   }
-};
+}; 
