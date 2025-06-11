@@ -20,12 +20,19 @@ module.exports = async (req, res) => {
 
     let rawRequest = req.body;
 
-    // Se o corpo estiver como string JSON, faz o parse
+    // Se vier como string, faz o parse
     if (typeof rawRequest === 'string') {
       rawRequest = JSON.parse(rawRequest);
     }
 
-    const nome = `${rawRequest.nome?.first || ''} ${rawRequest.nome?.last || ''}`.trim();
+    // 🔁 Suporte a nome como string OU como objeto
+    let nome = '';
+    if (typeof rawRequest.nome === 'object') {
+      nome = `${rawRequest.nome.first || ''} ${rawRequest.nome.last || ''}`.trim();
+    } else {
+      nome = rawRequest.nome || '';
+    }
+
     const email = rawRequest.email || '';
     const celular = rawRequest.celular || '';
     const tipoVisita = rawRequest.typeA || '';
@@ -34,7 +41,7 @@ module.exports = async (req, res) => {
     const numeroPessoas = rawRequest.numeroPessoas || '';
     const diaChegada = rawRequest.diaChegada || '';
 
-    console.log("🟢 Dados extraídos do Jotform:", {
+    console.log("🟢 Dados extraídos:", {
       nome,
       email,
       celular,
@@ -58,12 +65,14 @@ module.exports = async (req, res) => {
         customer: {
           name: nome,
           email: email,
-          phones: [{
-            country: "55",
-            area: celular.substring(0, 2),
-            number: celular.substring(2),
-            type: "MOBILE"
-          }]
+          phones: celular
+            ? [{
+                country: "55",
+                area: celular.substring(0, 2),
+                number: celular.substring(2),
+                type: "MOBILE"
+              }]
+            : []
         },
         items: [{
           name: tipoVisita,
@@ -87,7 +96,7 @@ module.exports = async (req, res) => {
 
     console.log('✅ Pagamento criado com sucesso');
 
-    // Envio para planilha
+    // ⚠️ ATENÇÃO: aqui estava o erro do Postman — faltava vírgula!
     const dadosConfirmados = {
       nome,
       email,
