@@ -1,15 +1,13 @@
 const fetch = require('node-fetch');
 
-function formatarCelular(celular) {
-  if (!celular) return '';
-  const numeros = celular.replace(/\D/g, '');
-  if (numeros.length === 11) {
-    return `(${numeros.substring(0, 2)}) ${numeros.substring(2, 7)}-${numeros.substring(7)}`;
-  }
-  if (numeros.length === 10) {
-    return `(${numeros.substring(0, 2)}) ${numeros.substring(2, 6)}-${numeros.substring(6)}`;
-  }
-  return celular;
+// Função auxiliar para coletar o corpo raw da requisição
+async function getRawBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => (body += chunk));
+    req.on('end', () => resolve(body));
+    req.on('error', err => reject(err));
+  });
 }
 
 module.exports = async (req, res) => {
@@ -18,17 +16,16 @@ module.exports = async (req, res) => {
       return res.status(405).json({ erro: 'Método não permitido' });
     }
 
-    // 🔍 Tenta capturar o corpo da requisição corretamente
-    let rawRequest = req.body;
+    // ⚠️ CAPTURA O BODY MESMO QUE NÃO VENHA PARSEADO
+    let rawBody = await getRawBody(req);
+    let rawRequest;
 
-    if (typeof rawRequest === 'string') {
-      try {
-        rawRequest = JSON.parse(rawRequest);
-      } catch (err) {
-        console.error("❌ Erro ao fazer JSON.parse:", err);
-        console.log("📦 RAW BODY:", req.body);
-        return res.status(400).json({ erro: 'JSON inválido recebido' });
-      }
+    try {
+      rawRequest = JSON.parse(rawBody);
+    } catch (err) {
+      console.error("❌ Erro ao fazer JSON.parse:", err);
+      console.log("📦 RAW BODY BRUTO:", rawBody);
+      return res.status(400).json({ erro: 'JSON inválido recebido' });
     }
 
     console.log("📦 RAW BODY DEPOIS DO PARSE:", rawRequest);
