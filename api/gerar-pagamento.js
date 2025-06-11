@@ -1,6 +1,14 @@
 const fetch = require('node-fetch');
 const { IncomingForm } = require('formidable');
 
+function formatarCelular(celular) {
+  const numeros = celular.replace(/\D/g, '');
+  if (numeros.length === 11) {
+    return `(${numeros.substring(0, 2)}) ${numeros.substring(2, 7)}-${numeros.substring(7)}`;
+  }
+  return celular;
+}
+
 module.exports = async (req, res) => {
   try {
     const form = new IncomingForm();
@@ -78,7 +86,7 @@ module.exports = async (req, res) => {
       const dadosConfirmados = {
         nome,
         email,
-        celular: `(${celular.substring(0, 2)}) ${celular.substring(2)}`,
+        celular: formatarCelular(celular)
         tipoDeVisita: tipoVisita,
         numeroDias: rawRequest.numeroDias || '',
         numeroPessoas: rawRequest.numeroPessoas || '',
