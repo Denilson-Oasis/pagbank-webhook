@@ -86,7 +86,7 @@ module.exports = async (req, res) => {
       const dadosConfirmados = {
         nome,
         email,
-        celular: formatarCelular(celular)
+        celular: formatarCelular(celular),
         tipoDeVisita: tipoVisita,
         numeroDias: rawRequest.numeroDias || '',
         numeroPessoas: rawRequest.numeroPessoas || '',
@@ -94,6 +94,7 @@ module.exports = async (req, res) => {
         diaChegada: rawRequest.diaChegada || ''
       };
 
+      console.log("📤 Enviando para planilha:", dadosConfirmados);
       await fetch('https://script.google.com/macros/s/AKfycbwFOM7sieQa7ItP0z5vRch5-Cb4LW4ntm2FaI9tf4w2pguArtmcXGjikmeA7K_SFn-MpA/exec', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
