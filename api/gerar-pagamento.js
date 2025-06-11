@@ -2,9 +2,13 @@ const fetch = require('node-fetch');
 const { IncomingForm } = require('formidable');
 
 function formatarCelular(celular) {
+  if (!celular) return '';
   const numeros = celular.replace(/\D/g, '');
   if (numeros.length === 11) {
     return `(${numeros.substring(0, 2)}) ${numeros.substring(2, 7)}-${numeros.substring(7)}`;
+  }
+  if (numeros.length === 10) {
+    return `(${numeros.substring(0, 2)}) ${numeros.substring(2, 6)}-${numeros.substring(6)}`;
   }
   return celular;
 }
