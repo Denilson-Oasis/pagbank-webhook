@@ -1,132 +1,135 @@
-const fetch = require('node-fetch');
+import { IncomingForm } from 'formidable';
+import fs from 'fs';
+import https from 'https';
 
-// Função auxiliar para coletar o corpo raw da requisição
-async function getRawBody(req) {
-  return new Promise((resolve, reject) => {
-    let body = '';
-    req.on('data', chunk => (body += chunk));
-    req.on('end', () => resolve(body));
-    req.on('error', err => reject(err));
-  });
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
+const PAGBANK_TOKEN = 'SEU_TOKEN_AQUI';
+const SCRIPT_URL = 'https://script.google.com/macros/s/SEU_SCRIPT_ID/exec';
+
+function parsePretty(pretty) {
+  const dados = {};
+  const campos = pretty.split(',').map(c => c.trim());
+  for (const campo of campos) {
+    const [chave, ...valor] = campo.split(':');
+    dados[chave.toLowerCase()] = valor.join(':').trim();
+  }
+  return dados;
 }
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   try {
-    if (req.method !== 'POST') {
-      return res.status(405).json({ erro: 'Método não permitido' });
-    }
+    const form = new IncomingForm();
+    form.parse(req, async (err, fields) => {
+      if (err) return res.status(500).json({ error: 'Erro ao ler o formulário' });
 
-    // ⚠️ CAPTURA O BODY MESMO QUE NÃO VENHA PARSEADO
-    let rawBody = await getRawBody(req);
-    let rawRequest;
+      const rawPretty = fields.pretty?.[0] || fields.pretty;
+      if (!rawPretty) return res.status(400).json({ error: 'Dados do formulário ausentes' });
 
-    try {
-      rawRequest = JSON.parse(rawBody);
-    } catch (err) {
-      console.error("❌ Erro ao fazer JSON.parse:", err);
-      console.log("📦 RAW BODY BRUTO:", rawBody);
-      return res.status(400).json({ erro: 'JSON inválido recebido' });
-    }
+      const dados = parsePretty(rawPretty);
 
-    console.log("📦 RAW BODY DEPOIS DO PARSE:", rawRequest);
+      // Gerar link de pagamento via PagBank
+      const paymentData = {
+        reference_id: Date.now().toString(),
+        customer: {
+          name: dados.nome,
+          email: dados['e-mail'],
+        },
+        items: [
+          {
+            name: dados['tipo de visita'],
+            quantity: 1,
+            unit_amount: parseInt(dados['valor total'].replace(/\D/g, '')),
+          },
+        ],
+        charges: [
+          {
+            payment_method: {
+              type: 'PIX',
+            },
+          },
+        ],
+      };
 
-    // 🔁 Suporte a nome como string OU como objeto
-    let nome = '';
-    if (typeof rawRequest.nome === 'object') {
-      nome = `${rawRequest.nome.first || ''} ${rawRequest.nome.last || ''}`.trim();
-    } else {
-      nome = rawRequest.nome || '';
-    }
+      const pagbankLink = await gerarPagamentoPagBank(paymentData);
 
-    const email = rawRequest.email || '';
-    const celular = rawRequest.celular || '';
-    const tipoVisita = rawRequest.tipoDeVisita || rawRequest.typeA || ''; // aceita os dois
-    const valorTotalStr = rawRequest.valorTotal || '0';
-    const numeroDias = rawRequest.numeroDias || '';
-    const numeroPessoas = rawRequest.numeroPessoas || '';
-    const diaChegada = rawRequest.diaChegada || '';
+      // Enviar dados para a planilha Google
+      await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome: dados.nome,
+          email: dados['e-mail'],
+          celular: dados['celular'],
+          tipo: dados['tipo de visita'],
+          dias: dados['número de dias'],
+          pessoas: dados['número de pessoas'],
+          valor: dados['valor total'],
+          chegada: dados['data'],
+          pagamento: pagbankLink,
+        }),
+      });
 
-    console.log("🟢 Dados extraídos:", {
-      nome,
-      email,
-      celular,
-      tipoVisita,
-      valorTotalStr,
-      numeroDias,
-      numeroPessoas,
-      diaChegada
+      // Enviar e-mail de confirmação (simulado)
+      await enviarEmailConfirmacao(dados['e-mail'], pagbankLink, dados.nome);
+
+      // Enviar mensagem via WhatsApp (simulado)
+      await enviarWhatsApp(dados['celular'], dados.nome, pagbankLink);
+
+      res.status(200).json({ status: 'ok', pagamento: pagbankLink });
     });
+  } catch (error) {
+    console.error('❌ Erro no processamento:', error);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+}
 
-    const valorCentavos = Math.round(parseFloat(valorTotalStr.replace(',', '.')) * 100);
+// ----------------------------
+// Funções auxiliares
+// ----------------------------
 
-    const response = await fetch('https://api.pagseguro.com/orders', {
+async function gerarPagamentoPagBank(data) {
+  return new Promise((resolve, reject) => {
+    const json = JSON.stringify(data);
+    const options = {
+      hostname: 'sandbox.api.pagseguro.com',
+      path: '/orders',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'SUA_CHAVE_PAGBANK_AQUI'
+        Authorization: `Bearer ${PAGBANK_TOKEN}`,
       },
-      body: JSON.stringify({
-        reference_id: `reserva-${Date.now()}`,
-        customer: {
-          name: nome,
-          email: email,
-          phones: celular
-            ? [{
-                country: "55",
-                area: celular.substring(0, 2),
-                number: celular.substring(2),
-                type: "MOBILE"
-              }]
-            : []
-        },
-        items: [{
-          name: tipoVisita,
-          quantity: 1,
-          unit_amount: valorCentavos
-        }],
-        charges: [{
-          payment_method: {
-            type: "PIX"
-          }
-        }]
-      })
-    });
-
-    const pagamento = await response.json();
-
-    if (pagamento.error_messages) {
-      console.error("❌ Erro na resposta do PagBank:", pagamento);
-      return res.status(500).json({ erro: 'Erro ao criar pagamento' });
-    }
-
-    console.log('✅ Pagamento criado com sucesso');
-
-    const dadosConfirmados = {
-      nome,
-      email,
-      celular: formatarCelular(celular),
-      tipoDeVisita: tipoVisita,
-      numeroDias,
-      numeroPessoas,
-      valorTotal: valorTotalStr,
-      diaChegada
     };
 
-    // Envia os dados para sua planilha do Google
-    await fetch('https://script.google.com/macros/s/AKfycbwFOM7sieQa7ItP0z5vRch5-Cb4LW4ntm2FaI9tf4w2pguArtmcXGjikmeA7K_SFn-MpA/exec', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(dadosConfirmados)
+    const req = https.request(options, (res) => {
+      let responseBody = '';
+      res.on('data', (chunk) => (responseBody += chunk));
+      res.on('end', () => {
+        try {
+          const result = JSON.parse(responseBody);
+          resolve(result.charges?.[0]?.payment_method?.qr_code_url || '');
+        } catch (e) {
+          reject(e);
+        }
+      });
     });
 
-    return res.status(200).json({
-      status: 'sucesso',
-      mensagem: 'Pagamento criado e reserva registrada.',
-      pagamento
-    });
+    req.on('error', reject);
+    req.write(json);
+    req.end();
+  });
+}
 
-  } catch (erro) {
-    console.error("❌ Erro no processamento:", erro);
-    return res.status(500).json({ erro: 'Erro interno no servidor' });
-  }
-}; 
+async function enviarEmailConfirmacao(email, linkPagamento, nome) {
+  console.log(`📧 Enviando e-mail para ${email} com link ${linkPagamento}`);
+  // Aqui entra sua integração com SendGrid, Nodemailer, Resend, etc.
+}
+
+async function enviarWhatsApp(numero, nome, linkPagamento) {
+  console.log(`📲 Enviando WhatsApp para ${numero} com link ${linkPagamento}`);
+  // Aqui entrará a integração com a API de WhatsApp oficial ou Z-API.
+}
