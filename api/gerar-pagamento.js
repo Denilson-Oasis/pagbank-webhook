@@ -21,9 +21,20 @@ module.exports = async (req, res) => {
     let rawRequest = req.body;
 
     // Se vier como string, faz o parse
+
     if (typeof rawRequest === 'string') {
-      rawRequest = JSON.parse(rawRequest);
+      try {
+        rawRequest = JSON.parse(rawRequest);
+      } catch (err) {
+        console.error("❌ Erro ao fazer JSON.parse:", err);
+        console.log("📦 RAW BODY:", req.body);
+        return res.status(400).json({ erro: 'JSON inválido recebido' });
+      }
     }
+    
+    // Log para debug
+    console.log("📦 RAW BODY DEPOIS DO PARSE:", rawRequest);
+    ...
 
     // 🔁 Suporte a nome como string OU como objeto
     let nome = '';
