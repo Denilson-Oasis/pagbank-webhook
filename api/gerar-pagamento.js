@@ -8,8 +8,8 @@ export const config = {
   },
 };
 
-const PAGBANK_TOKEN = 'SEU_TOKEN_AQUI';
-const SCRIPT_URL = 'https://script.google.com/macros/s/SEU_SCRIPT_ID/exec';
+const PAGBANK_TOKEN = '05e08ae1-dc81-42f6-999f-bf1309c86f0a7faff224496396544e9fd225911b4b62e9d0-e1d1-4a25-ad34-4b18e4aecdf5';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwFOM7sieQa7ItP0z5vRch5-Cb4LW4ntm2FaI9tf4w2pguArtmcXGjikmeA7K_SFn-MpA/exec';
 
 function parsePretty(pretty) {
   const dados = {};
