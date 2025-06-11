@@ -78,7 +78,7 @@ module.exports = async (req, res) => {
       const dadosConfirmados = {
         nome,
         email,
-        celular,
+        celular: `(${celular.substring(0, 2)}) ${celular.substring(2)}`,
         tipoDeVisita: tipoVisita,
         numeroDias: rawRequest.numeroDias || '',
         numeroPessoas: rawRequest.numeroPessoas || '',
