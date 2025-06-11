@@ -11,14 +11,11 @@ function formatarCelular(celular) {
 
 module.exports = async (req, res) => {
   try {
-    const form = new IncomingForm();
-    form.parse(req, async (err, fields) => {
-      if (err) {
-        console.error("❌ Erro ao fazer parse do formulário:", err);
-        return res.status(400).json({ erro: 'Erro ao processar os dados' });
-      }
+    if (req.method !== 'POST') {
+      return res.status(405).json({ erro: 'Método não permitido' });
+    }
 
-      const rawRequest = fields;
+    const rawRequest = req.body;
 
       const nome = `${rawRequest.nome?.first || ''} ${rawRequest.nome?.last || ''}`.trim();
       const email = rawRequest.email || '';
