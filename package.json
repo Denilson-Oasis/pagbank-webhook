@@ -12,4 +12,7 @@
     "@sendgrid/mail": "^8.0.0",
     "formidable": "^3.5.0"
   }
+  "engines": {
+    "node": "18.x"
+  }
 }
