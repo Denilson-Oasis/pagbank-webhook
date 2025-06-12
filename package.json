@@ -1,11 +1,15 @@
 {
-  "name": "pagbank-webhook",
+  "name": "oasiscamping-reservas",
   "version": "1.0.0",
+  "description": "Reserva e Pagamento do Camping Oásis",
   "main": "index.js",
-  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "start": "node api/gerar-pagamento.js"
+  },
   "dependencies": {
-    "raw-body": "^2.5.2",
-    "formidable": "^3.5.0",
-    "node-fetch": "^2.6.1"
+    "googleapis": "^118.0.0",
+    "@sendgrid/mail": "^8.0.0",
+    "formidable": "^3.5.0"
   }
 }
