@@ -1,135 +1,88 @@
-import { IncomingForm } from 'formidable';
-import fs from 'fs';
-import https from 'https';
+// /api/gerar-pagamento.js
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+const https = require('https');
+const { GoogleSpreadsheet } = require('google-spreadsheet');
+const sgMail = require('@sendgrid/mail');
 
-const PAGBANK_TOKEN = '05e08ae1-dc81-42f6-999f-bf1309c86f0a7faff224496396544e9fd225911b4b62e9d0-e1d1-4a25-ad34-4b18e4aecdf5';
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwFOM7sieQa7ItP0z5vRch5-Cb4LW4ntm2FaI9tf4w2pguArtmcXGjikmeA7K_SFn-MpA/exec';
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-function parsePretty(pretty) {
-  const dados = {};
-  const campos = pretty.split(',').map(c => c.trim());
-  for (const campo of campos) {
-    const [chave, ...valor] = campo.split(':');
-    dados[chave.toLowerCase()] = valor.join(':').trim();
-  }
-  return dados;
-}
-
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   try {
-    const form = new IncomingForm();
-    form.parse(req, async (err, fields) => {
-      if (err) return res.status(500).json({ error: 'Erro ao ler o formulário' });
+    if (req.method !== 'POST') {
+      return res.status(405).send({ error: 'Método não permitido' });
+    }
 
-      const rawPretty = fields.pretty?.[0] || fields.pretty;
-      if (!rawPretty) return res.status(400).json({ error: 'Dados do formulário ausentes' });
+    // Tratamento do body (form-data)
+    const chunks = [];
+    for await (const chunk of req) chunks.push(chunk);
+    const rawBody = Buffer.concat(chunks).toString();
 
-      const dados = parsePretty(rawPretty);
+    const match = rawBody.match(/name="rawRequest"\s+([\s\S]*?)\s+[-]{10,}/);
+    if (!match) throw new Error('Campo rawRequest não encontrado no corpo da requisição.');
 
-      // Gerar link de pagamento via PagBank
-      const paymentData = {
-        reference_id: Date.now().toString(),
-        customer: {
-          name: dados.nome,
-          email: dados['e-mail'],
-        },
-        items: [
-          {
-            name: dados['tipo de visita'],
-            quantity: 1,
-            unit_amount: parseInt(dados['valor total'].replace(/\D/g, '')),
-          },
-        ],
-        charges: [
-          {
-            payment_method: {
-              type: 'PIX',
-            },
-          },
-        ],
-      };
-
-      const pagbankLink = await gerarPagamentoPagBank(paymentData);
-
-      // Enviar dados para a planilha Google
-      await fetch(SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nome: dados.nome,
-          email: dados['e-mail'],
-          celular: dados['celular'],
-          tipo: dados['tipo de visita'],
-          dias: dados['número de dias'],
-          pessoas: dados['número de pessoas'],
-          valor: dados['valor total'],
-          chegada: dados['data'],
-          pagamento: pagbankLink,
-        }),
-      });
-
-      // Enviar e-mail de confirmação (simulado)
-      await enviarEmailConfirmacao(dados['e-mail'], pagbankLink, dados.nome);
-
-      // Enviar mensagem via WhatsApp (simulado)
-      await enviarWhatsApp(dados['celular'], dados.nome, pagbankLink);
-
-      res.status(200).json({ status: 'ok', pagamento: pagbankLink });
-    });
-  } catch (error) {
-    console.error('❌ Erro no processamento:', error);
-    res.status(500).json({ error: 'Erro interno' });
-  }
-}
-
-// ----------------------------
-// Funções auxiliares
-// ----------------------------
-
-async function gerarPagamentoPagBank(data) {
-  return new Promise((resolve, reject) => {
-    const json = JSON.stringify(data);
-    const options = {
-      hostname: 'sandbox.api.pagseguro.com',
-      path: '/orders',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${PAGBANK_TOKEN}`,
-      },
+    const json = JSON.parse(match[1].trim());
+    const dados = {
+      nome: `${json.q47_name.first || ''} ${json.q47_name.last || ''}`.trim(),
+      email: json.q48_email || '',
+      celular: json.q49_phoneNumber?.full || '',
+      tipoVisita: json.q53_typeA || '',
+      numeroDias: json.q51_number || '',
+      numeroPessoas: json.q52_number52 || '',
+      valorTotal: json.q62_valorTotal || '',
+      dataChegada: `${json.q50_date.day}/${json.q50_date.month}/${json.q50_date.year}`
     };
 
-    const req = https.request(options, (res) => {
-      let responseBody = '';
-      res.on('data', (chunk) => (responseBody += chunk));
-      res.on('end', () => {
-        try {
-          const result = JSON.parse(responseBody);
-          resolve(result.charges?.[0]?.payment_method?.qr_code_url || '');
-        } catch (e) {
-          reject(e);
-        }
-      });
+    console.log("📩 Dados extraídos:", dados);
+
+    // Envio de e-mail real com SendGrid
+    const msg = {
+      to: dados.email,
+      from: process.env.FROM_EMAIL,
+      subject: process.env.RESERVA_ASSUNTO || 'Confirmação de Reserva - Camping Oásis',
+      html: `
+        <h2>Olá ${dados.nome},</h2>
+        <p>Sua reserva foi recebida com sucesso!</p>
+        <ul>
+          <li><strong>Tipo de Visita:</strong> ${dados.tipoVisita}</li>
+          <li><strong>Data de Chegada:</strong> ${dados.dataChegada}</li>
+          <li><strong>Nº de Dias:</strong> ${dados.numeroDias}</li>
+          <li><strong>Nº de Pessoas:</strong> ${dados.numeroPessoas}</li>
+          <li><strong>Valor Total:</strong> ${dados.valorTotal}</li>
+        </ul>
+        <p>Traga este e-mail no dia da sua chegada.</p>
+        <p>Deus abençoe sua visita! 🙏</p>
+      `
+    };
+
+    await sgMail.send(msg);
+    console.log("✅ E-mail enviado para:", dados.email);
+
+    // Envio para planilha (como você já tem, pode manter esse bloco abaixo)
+    const doc = new GoogleSpreadsheet(process.env.SHEET_ID);
+    await doc.useServiceAccountAuth({
+      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    });
+    await doc.loadInfo();
+    const sheet = doc.sheetsByIndex[0];
+
+    await sheet.addRow({
+      Nome: dados.nome,
+      E_mail: dados.email,
+      Celular: dados.celular,
+      Tipo_de_Visita: dados.tipoVisita,
+      Número_de_Dias: dados.numeroDias,
+      Número_de_Pessoas: dados.numeroPessoas,
+      Valor_Total: dados.valorTotal,
+      Data_de_Chegada: dados.dataChegada
     });
 
-    req.on('error', reject);
-    req.write(json);
-    req.end();
-  });
-}
+    console.log("📊 Dados salvos na planilha com sucesso");
 
-async function enviarEmailConfirmacao(email, linkPagamento, nome) {
-  console.log(`📧 Enviando e-mail para ${email} com link ${linkPagamento}`);
-  // Aqui entra sua integração com SendGrid, Nodemailer, Resend, etc.
-}
+    res.status(200).json({ message: 'Reserva processada e e-mail enviado com sucesso.' });
 
-async function enviarWhatsApp(numero, nome, linkPagamento) {
-  console.log(`📲 Enviando WhatsApp para ${numero} com link ${linkPagamento}`);
-  // Aqui entrará a integração com a API de WhatsApp oficial ou Z-API.
-}
+  } catch (error) {
+    console.error("❌ Erro:", error.message);
+    res.status(500).json({ error: 'Erro ao processar a reserva.' });
+  }
+};
