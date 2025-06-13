@@ -37,7 +37,7 @@ export default async function handler(req, res) {
 
   // Campos relevantes
   const nome = `${rawJson.q47_name?.first || ''} ${rawJson.q47_name?.last || ''}`.trim();
-  const celular = rawJson.q49_full_phoneNumber;
+  const celular = rawJson.q49_phoneNumber;
   const tipo_de_visita = rawJson.q53_typeA;
   const dia_da_chegada = `${rawJson.q50_date?.day}/${rawJson.q50_date?.month}/${rawJson.q50_date?.year}`;
   const numero_de_dias = rawJson.q51_number;
