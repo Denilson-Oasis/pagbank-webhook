@@ -53,13 +53,22 @@ export default async function handler(req, res) {
 
     // 3. Enviar e-mail via SendGrid
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-    const msg = {
-      to: email,
-      from: process.env.FROM_EMAIL,
-      subject: process.env.RESERVA_ASSUNTO || 'Confirmação de Reserva',
-      text: `Olá ${nome},\n\nSua reserva foi recebida com sucesso!\n\nValor: ${valor}\nData de chegada: ${dataChegada}\nLink para pagamento: ${linkPagamento}\n\nDeus abençoe!\nEquipe Camping Oásis`,
-    };
-    await sgMail.send(msg);
+    try {
+      console.log('📨 Enviando e-mail para:', email);
+      const msg = {
+        to: email,
+        from: process.env.FROM_EMAIL,
+        subject: process.env.RESERVA_ASSUNTO || 'Confirmação de Reserva - Camping Oásis',
+        text: `Olá ${nome},\n\nSua reserva foi recebida com sucesso!\n\nValor: ${valor}\nData de chegada: ${dataChegada}\nLink para pagamento: ${linkPagamento}\n\nDeus abençoe!\nEquipe Camping Oásis`,
+      };
+      const response = await sgMail.send(msg);
+      console.log('✅ E-mail enviado com status:', response[0].statusCode);
+    } catch (error) {
+      console.error('❌ Erro ao enviar e-mail:', error);
+      if (error.response) {
+        console.error('📩 Corpo da resposta do erro:', error.response.body);
+      }
+    }
 
     // 4. (Próximo passo) Enviar WhatsApp
 
