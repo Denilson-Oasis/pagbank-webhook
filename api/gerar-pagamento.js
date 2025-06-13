@@ -23,7 +23,8 @@ export default async function handler(req, res) {
     const rawRequest = JSON.parse(data.rawRequest[0]);
     const nome = `${rawRequest.q47_name.first} ${rawRequest.q47_name.last}`;
     const email = rawRequest.q48_email;
-    const celular = `${rawRequest.phoneNumber?.area || ''}${rawRequest.phoneNumber?.phone || ''}`;
+    const phoneRaw = rawRequest.phoneNumber || {};
+    const celular = phoneRaw.full || `${phoneRaw.area || ''}${phoneRaw.phone || ''}`;
     const tipoVisita = rawRequest.q53_typeA;
     const dias = rawRequest.q51_number;
     const pessoas = rawRequest.q52_number52;
