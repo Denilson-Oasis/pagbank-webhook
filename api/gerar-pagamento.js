@@ -44,10 +44,20 @@ export default async function handler(req, res) {
     const sheets = google.sheets({ version: 'v4', auth });
     await sheets.spreadsheets.values.append({
       spreadsheetId: process.env.SHEET_ID,
-      range: 'Página1!A1:H1',
+      range: 'Página1!A1:I1', // Agora com 9 colunas (A até I)
       valueInputOption: 'RAW',
       requestBody: {
-        values: [[nome, email, celular, tipoVisita, dias, pessoas, valor, dataChegada]],
+        values: [[
+          nome,
+          email,
+          celular,
+          tipoVisita,
+          dias,
+          pessoas,
+          valor,
+          dataChegada,
+          "Aguardando Pagamento"
+        ]],
       },
     });
 
