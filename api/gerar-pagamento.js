@@ -57,7 +57,7 @@ export default async function handler(req, res) {
       console.log('📨 Enviando e-mail para:', email);
       const msg = {
         to: email,
-        from: process.env.FROM_EMAIL,
+        from: 'no-reply@oasiscamping.vercel.app',
         subject: process.env.RESERVA_ASSUNTO || 'Confirmação de Reserva - Camping Oásis',
         text: `Olá ${nome},\n\nSua reserva foi recebida com sucesso!\n\nValor: ${valor}\nData de chegada: ${dataChegada}\nLink para pagamento: ${linkPagamento}\n\nDeus abençoe!\nEquipe Camping Oásis`,
       };
