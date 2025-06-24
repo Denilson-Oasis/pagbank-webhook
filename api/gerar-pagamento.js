@@ -64,6 +64,7 @@ export default async function handler(req, res) {
     });
 
     const pagamentoData = await pagamentoResponse.json();
+    console.log('📥 Resposta do PagBank:', JSON.stringify(pagamentoData, null, 2));
 
     let linkPagamento = 'Link indisponível';
     
