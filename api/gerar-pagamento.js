@@ -30,8 +30,45 @@ export default async function handler(req, res) {
     const valor = rawRequest.q62_valorTotal;
     const dataChegada = `${rawRequest.q50_date.day}/${rawRequest.q50_date.month}/${rawRequest.q50_date.year}`;
 
-    // 1. Gerar link de pagamento (simulado, substitua com sua lógica do PagBank se necessário)
-    const linkPagamento = `https://pag.ae/EXEMPLO123?valor=${encodeURIComponent(valor)}&nome=${encodeURIComponent(nome)}`;
+    // 1. Gerar link de pagamento com PagBank (PIX via QR Code)
+    const valorCentavos = parseInt(valor.replace(/[^\d]/g, ''));
+
+    const pagamentoResponse = await fetch('https://api.pagseguro.com/orders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.PAGBANK_TOKEN}`
+      },
+      body: JSON.stringify({
+        reference_id: `reserva-${Date.now()}`,
+        customer: {
+          name: nome,
+          email: email,
+          tax_id: '12345678900' // Substitua por CPF real em produção
+        },
+        items: [
+          {
+            name: 'Reserva Camping Oásis',
+            quantity: 1,
+            unit_amount: valorCentavos
+          }
+        ],
+        qr_codes: [
+          {
+            amount: {
+              value: valorCentavos
+            }
+          }
+        ]
+      })
+    });
+
+    const pagamentoData = await pagamentoResponse.json();
+
+    let linkPagamento = 'Link indisponível';
+    if (pagamentoData.qr_codes && pagamentoData.qr_codes.length > 0) {
+      linkPagamento = pagamentoData.qr_codes[0].links.find(link => link.rel === 'PAY_QR_CODE')?.href || linkPagamento;
+    }
 
     // 2. Enviar para a Planilha
     const auth = new google.auth.JWT(
@@ -80,12 +117,9 @@ export default async function handler(req, res) {
       }
     }
 
-    // 4. (Próximo passo) Enviar WhatsApp
-
     return res.status(200).json({ message: 'Processado com sucesso!', linkPagamento });
   } catch (err) {
     console.error('❌ Erro geral:', err);
     return res.status(500).json({ error: 'Erro ao processar a solicitação.' });
   }
 }
-
