@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     // 1. Gerar link de pagamento com PagBank (PIX via QR Code)
     const valorCentavos = parseInt(valor.replace(/[^\d]/g, ''));
 
-    const pagamentoResponse = await fetch('https://api.pagseguro.com/orders', {
+    const pagamentoResponse = await fetch('https://sandbox.api.pagseguro.com/orders', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
