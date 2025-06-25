@@ -44,7 +44,7 @@ export default async function handler(req, res) {
         customer: {
           name: nome,
           email: email,
-          tax_id: '12345678900' // Substitua por CPF real em produção
+          tax_id: '11144477735' // Substitua por CPF real em produção
         },
         items: [
           {
