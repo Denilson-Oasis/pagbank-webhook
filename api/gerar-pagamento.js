@@ -31,7 +31,11 @@ export default async function handler(req, res) {
     const dataChegada = `${rawRequest.q50_date.day}/${rawRequest.q50_date.month}/${rawRequest.q50_date.year}`;
 
     // 1. Gerar link de pagamento com PagBank (PIX via QR Code)
-    const valorCentavos = parseInt(valor.replace(/[^\d]/g, ''));
+    const valorCentavos = Math.round(
+      parseFloat(
+        valor.replace('R$', '').replace(/\./g, '').replace(',', '.').trim()
+      ) * 100
+    );
 
     const pagamentoResponse = await fetch('https://sandbox.api.pagseguro.com/orders', {
       method: 'POST',
@@ -113,7 +117,7 @@ export default async function handler(req, res) {
         to: email,
         from: process.env.FROM_EMAIL,
         subject: process.env.RESERVA_ASSUNTO || 'Confirmação de Reserva - Camping Oásis',
-        text: `Olá ${nome},\n\nSua reserva foi recebida com sucesso!\n\nValor: ${valor}\nData de chegada: ${dataChegada}\nLink para pagamento: ${linkPagamento}\n\nDeus abençoe!\nEquipe Camping Oásis`,
+        text: `Olá ${nome},\n\nSua reserva foi recebida com sucesso!\n\nValor: ${valor}\nData de chegada: ${dataChegada}\nLink para pagamento: ${linkPagamento !== 'Link indisponível' ? linkPagamento : 'Você receberá o link em breve por e-mail ou WhatsApp.'}\n\nCódigo da Reserva: ${referenceId}\n\nDeus abençoe!\nEquipe Camping Oásis`,
       };
       const response = await sgMail.send(msg);
       console.log('✅ E-mail enviado com status:', response[0].statusCode);
