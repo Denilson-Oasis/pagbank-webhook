@@ -75,10 +75,8 @@ export default async function handler(req, res) {
     if (pagamentoData.qr_codes && pagamentoData.qr_codes.length > 0) {
       const links = pagamentoData.qr_codes[0].links || [];
     
-      const linkCheckout = links.find(link => link.rel === 'CHECKOUT')?.href;
-      const linkQrCode = links.find(link => link.rel === 'PAY_QR_CODE')?.href;
-    
-      linkPagamento = linkCheckout || linkQrCode || 'Link indisponível';
+    const linkQrCodePng = links.find(link => link.rel === 'QRCODE.PNG')?.href;
+    linkPagamento = linkQrCodePng || 'Link indisponível';
     }
 
     // 2. Enviar para a Planilha
